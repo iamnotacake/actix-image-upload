@@ -3,22 +3,13 @@ use actix_web::{ post, App, HttpServer, Responder, web };
 use actix_multipart::Multipart;
 use tokio::prelude::*;
 use tokio::stream::StreamExt;
-use rand::prelude::*;
+use actix_image_upload as lib;
 
 #[derive(Clone)]
 struct Config {
     host: String,
     port: u16,
     uploads_dir: PathBuf,
-}
-
-fn gen_rand_id(len: usize) -> String {
-    let mut rng = thread_rng();
-
-    (0..len)
-        .map(|_| rng.sample(rand::distributions::Alphanumeric))
-        .take(len)
-        .collect()
 }
 
 #[post("/upload")]
@@ -36,7 +27,7 @@ async fn upload(mut multipart: Multipart, config: web::Data<Config>) -> impl Res
 
         let mut tmp_path = PathBuf::with_capacity(64);
         tmp_path.push(&config.get_ref().uploads_dir);
-        tmp_path.push(gen_rand_id(12));
+        tmp_path.push(lib::gen_rand_id(12));
         tmp_path.set_extension("tmp");
 
         let file = tokio::fs::File::create(&tmp_path).await.unwrap();
