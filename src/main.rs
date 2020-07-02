@@ -1,5 +1,6 @@
 use actix_web::{ post, App, HttpServer, Responder, web };
 
+#[derive(Clone)]
 struct Config {
     host: String,
     port: u16,
@@ -24,11 +25,14 @@ async fn main() -> std::io::Result<()> {
     tokio::fs::create_dir_all(&config.tmp_dir).await?;
     tokio::fs::create_dir_all(&config.uploads_dir).await?;
 
-    HttpServer::new(|| {
+    let (host, port) = (config.host.clone(), config.port);
+
+    HttpServer::new(move || {
         App::new()
+            .data(config.clone())
             .service(upload)
     })
-    .bind((config.host.as_ref(), config.port))?
+    .bind((host.as_ref(), port))?
     .run()
     .await
 }
