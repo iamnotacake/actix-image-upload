@@ -17,6 +17,15 @@ version = "^1.1.1"
 version = "^3.0.0-alpha.3"
 default-features = false
 
+[dependencies.actix-multipart]
+version = "^0.3.0-alpha.1"
+
+[dependencies.mime]
+version = "^0.3.16"
+
 [dependencies.tokio]
 version = "^0.2.21"
 features = ["fs"]
+
+[dependencies.rand]
+version = "^0.7.3"
