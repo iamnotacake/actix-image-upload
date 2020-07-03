@@ -39,8 +39,10 @@ async fn upload(mut multipart: Multipart, config: web::Data<Config>) -> impl Res
 
         while let Some(chunk) = field.next().await {
             let chunk = chunk.unwrap();
-            writer.write(&chunk).await.unwrap();
+            writer.write_all(&chunk).await.unwrap();
         }
+
+        writer.flush().await.unwrap();
 
         let mut upload_path = tmp_path.clone();
         upload_path.set_extension("");
