@@ -25,7 +25,7 @@ version = "^0.3.16"
 
 [dependencies.tokio]
 version = "^0.2.21"
-features = ["fs"]
+features = ["blocking", "fs"]
 
 [dependencies.rand]
 version = "^0.7.3"
