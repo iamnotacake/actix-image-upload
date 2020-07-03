@@ -29,3 +29,6 @@ features = ["fs"]
 
 [dependencies.rand]
 version = "^0.7.3"
+
+[dependencies.opencv]
+version = "^0.43.1"
