@@ -29,7 +29,7 @@ async fn upload(mut multipart: Multipart, config: web::Data<Config>) -> impl Res
         let content_disposition = field.content_disposition().unwrap();
 
         if content_disposition.get_name() != Some("image") {
-            return web::HttpResponse::BadRequest()
+            return web::HttpResponse::BadRequest();
         }
 
         let id = lib::gen_rand_id(12);
@@ -42,9 +42,11 @@ async fn upload(mut multipart: Multipart, config: web::Data<Config>) -> impl Res
         let file = tokio::fs::File::create(&tmp_path).await.unwrap();
         let mut writer = tokio::io::BufWriter::new(file);
 
-        eprintln!("Uploading {} -> {}",
-                  content_disposition.get_filename().unwrap_or("?"),
-                  tmp_path.to_str().unwrap_or("?"));
+        eprintln!(
+            "Uploading {} -> {}",
+            content_disposition.get_filename().unwrap_or("?"),
+            tmp_path.to_str().unwrap_or("?"),
+        );
 
         while let Some(chunk) = field.next().await {
             let chunk = chunk.unwrap();
@@ -56,7 +58,11 @@ async fn upload(mut multipart: Multipart, config: web::Data<Config>) -> impl Res
         let mut upload_path = tmp_path.clone();
         upload_path.set_extension(extension);
 
-        eprintln!("Renaming {} -> {}", tmp_path.to_str().unwrap_or("?"), upload_path.to_str().unwrap_or("?"));
+        eprintln!(
+            "Renaming {} -> {}",
+            tmp_path.to_str().unwrap_or("?"),
+            upload_path.to_str().unwrap_or("?")
+        );
         tokio::fs::rename(&tmp_path, &upload_path).await.unwrap();
 
         let mut thumbnail_path = upload_path.clone();
