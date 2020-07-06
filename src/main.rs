@@ -14,7 +14,7 @@ struct Config {
 
 #[post("/upload")]
 async fn upload(mut multipart: Multipart, config: web::Data<Config>) -> impl Responder {
-    if let Ok(Some(mut field)) = multipart.try_next().await {
+    if let Ok(Some(field)) = multipart.try_next().await {
         if field.content_type().type_() != mime::IMAGE {
             return web::HttpResponse::UnsupportedMediaType()
         }
@@ -40,7 +40,7 @@ async fn upload(mut multipart: Multipart, config: web::Data<Config>) -> impl Res
         tmp_path.set_extension("tmp");
 
         let file = tokio::fs::File::create(&tmp_path).await.unwrap();
-        let mut writer = tokio::io::BufWriter::new(file);
+        let writer = tokio::io::BufWriter::new(file);
 
         eprintln!(
             "Uploading {} -> {}",
@@ -48,12 +48,12 @@ async fn upload(mut multipart: Multipart, config: web::Data<Config>) -> impl Res
             tmp_path.to_str().unwrap_or("?"),
         );
 
-        while let Some(chunk) = field.next().await {
-            let chunk = chunk.unwrap();
-            writer.write_all(&chunk).await.unwrap();
+        let res = lib::stream_to_writer(field, writer).await;
+        if let Err(err) = res {
+            eprintln!("Upload error: {}", err);
+            tokio::fs::remove_file(&tmp_path).await.unwrap();
+            return web::HttpResponse::BadRequest();
         }
-
-        writer.flush().await.unwrap();
 
         let mut upload_path = tmp_path.clone();
         upload_path.set_extension(extension);
