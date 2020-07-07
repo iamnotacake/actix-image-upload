@@ -33,12 +33,25 @@ async fn upload(mut multipart: Multipart, config: web::Data<Config>) -> impl Res
         }
 
         let res = lib::upload_image(field, &config.get_ref().uploads_dir, extension).await;
-        if let Err(err) = res {
-            eprintln!("{}", err);
-            return web::HttpResponse::UnsupportedMediaType();
+        match res {
+            Ok(lib::UploadedFile { id, path, thumbnail_path }) => {
+                eprintln!(
+                    "Upload succeed, id: {}, path: {}, thumbnail: {}",
+                    id,
+                    path.to_str().unwrap_or("?"),
+                    if let Some(ref path) = thumbnail_path { path.to_str().unwrap_or("?") } else { "Failed to create" },
+                );
+                return web::HttpResponse::Ok();
+            }
+            Err(lib::UploadError::Client(e)) => {
+                eprintln!("Upload error: {}", e);
+                return web::HttpResponse::BadRequest();
+            }
+            Err(lib::UploadError::Server(e)) => {
+                eprintln!("Upload error: {}", e);
+                return web::HttpResponse::InternalServerError();
+            }
         }
-
-        return web::HttpResponse::Ok();
     }
 
     web::HttpResponse::BadRequest()
