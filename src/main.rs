@@ -32,53 +32,7 @@ async fn upload(mut multipart: Multipart, config: web::Data<Config>) -> impl Res
             return web::HttpResponse::BadRequest();
         }
 
-        let id = lib::gen_rand_id(12);
-
-        let mut tmp_path = PathBuf::with_capacity(64);
-        tmp_path.push(&config.get_ref().uploads_dir);
-        tmp_path.push(&id);
-        tmp_path.set_extension("tmp");
-
-        let file = tokio::fs::File::create(&tmp_path).await.unwrap();
-        let writer = tokio::io::BufWriter::new(file);
-
-        eprintln!(
-            "Uploading {} -> {}",
-            content_disposition.get_filename().unwrap_or("?"),
-            tmp_path.to_str().unwrap_or("?"),
-        );
-
-        let res = lib::stream_to_writer(field, writer).await;
-        if let Err(err) = res {
-            eprintln!("Upload error: {}", err);
-            tokio::fs::remove_file(&tmp_path).await.unwrap();
-            return web::HttpResponse::BadRequest();
-        }
-
-        let mut upload_path = tmp_path.clone();
-        upload_path.set_extension(extension);
-
-        eprintln!(
-            "Renaming {} -> {}",
-            tmp_path.to_str().unwrap_or("?"),
-            upload_path.to_str().unwrap_or("?")
-        );
-        tokio::fs::rename(&tmp_path, &upload_path).await.unwrap();
-
-        let mut thumbnail_path = upload_path.clone();
-        thumbnail_path.set_file_name(format!("{}_thumbnail.{}", id, extension));
-
-        eprintln!(
-            "Thumbnail {} -> {}",
-            upload_path.to_str().unwrap_or("?"),
-            thumbnail_path.to_str().unwrap_or("?")
-        );
-        // Processing of a big image may be a hard task,
-        // let's do it on a dedicated thread
-        let res = tokio::task::spawn_blocking(move || {
-            lib::imagetools::create_thumbnail(&upload_path, &thumbnail_path, (100, 100))
-        }).await;
-
+        let res = lib::upload_image(field, &config.get_ref().uploads_dir, extension).await;
         if let Err(err) = res {
             eprintln!("{}", err);
             return web::HttpResponse::UnsupportedMediaType();
