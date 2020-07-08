@@ -1,6 +1,7 @@
 use std::convert::AsRef;
 use std::path::{Path, PathBuf};
 
+use actix_web::http::header;
 use bytes::Bytes;
 use rand::prelude::*;
 use tokio::prelude::*;
@@ -44,6 +45,16 @@ pub enum UploadError {
     Server(failure::Error),
 }
 
+#[derive(Debug, Fail)]
+pub enum FetchError {
+    #[fail(display = "Server returned non-success code")]
+    ServerReturnedError,
+    #[fail(display = "Server returned unsupported media type")]
+    UnsupportedMediaType,
+    #[fail(display = "Fetch failed: {}", 0)]
+    FetchError(reqwest::Error),
+}
+
 /// Guess file extension based on MIME type or return None if we don't handle that type
 pub fn mime_type_to_extension(mime_type: &str) -> Option<&'static str> {
     match mime_type {
@@ -62,6 +73,45 @@ pub fn gen_rand_id(len: usize) -> String {
         .map(|_| rng.sample(rand::distributions::Alphanumeric))
         .take(len)
         .collect()
+}
+
+pub async fn fetch_image(config: &Config, uri: &str) -> Fallible<UploadedFile> {
+    let client = reqwest::Client::new();
+
+    let mut headers = reqwest::header::HeaderMap::new();
+    headers.insert(header::ACCEPT, "image/jpeg, image/png, image/bmp".parse().unwrap());
+
+    let response = client
+        .get(uri)
+        .headers(headers)
+        .send()
+        .await?;
+
+    dbg!(&response);
+
+    if !response.status().is_success() {
+        return Err(FetchError::ServerReturnedError.into());
+    }
+
+    let headers = response.headers();
+
+    let extension = match headers.get(header::CONTENT_TYPE) {
+        Some(mime_type) => {
+            let mime_type_str = mime_type
+                .to_str()
+                .map_err(|_| FetchError::UnsupportedMediaType)?;
+
+            match mime_type_to_extension(mime_type_str) {
+                Some(ext) => ext,
+                None => return Err(FetchError::UnsupportedMediaType.into()),
+            }
+        }
+        None => return Err(FetchError::UnsupportedMediaType.into()),
+    };
+
+    let stream = response.bytes_stream();
+
+    upload_image(stream, &config.uploads_dir, extension).await
 }
 
 pub async fn upload_image<S, P, E>(

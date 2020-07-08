@@ -26,6 +26,13 @@ version = "^0.1.8"
 [dependencies.failure_derive]
 version = "^0.1.8"
 
+[dependencies.bytes]
+version = "^0.5.5"
+
+[dependencies.reqwest]
+version = "^0.10.6"
+features = ["stream"]
+
 [dependencies.mime]
 version = "^0.3.16"
 

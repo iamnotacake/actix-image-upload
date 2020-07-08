@@ -1,5 +1,6 @@
 use actix_web::{ App, HttpServer, HttpResponse, Responder, web, guard };
 use actix_multipart::Multipart;
+use serde::Deserialize;
 use tokio::stream::StreamExt;
 
 use actix_image_upload as lib;
@@ -69,16 +70,41 @@ enum UploadRequest {
     Base64(String),
 }
 
-async fn upload_json(req: web::Json<Vec<UploadRequest>>) -> impl Responder {
+async fn upload_json(req: web::Json<Vec<UploadRequest>>, config: web::Data<Config>) -> impl Responder {
     let mut uploaded_files: Vec<UploadedFile> = Vec::new();
     dbg!(&req);
 
     for upload_request in req.iter() {
         match upload_request {
             UploadRequest::Url(url) => {
-                return web::HttpResponse::NotImplemented();
+                let res = lib::fetch_image(&config.get_ref(), &url).await;
+                match res {
+                    Ok(uploaded_file) => {
+                        eprintln!(
+                            "Upload succeed, id: {}, path: {}, thumbnail: {}",
+                            uploaded_file.id,
+                            uploaded_file.path.to_str().unwrap_or("?"),
+                            if let Some(ref path) = uploaded_file.thumbnail_path {
+                                path.to_str().unwrap_or("?")
+                            } else {
+                                "Failed to create"
+                            },
+                        );
+
+                        uploaded_files.push(uploaded_file);
+                    }
+                    Err(err) => {
+                        eprintln!("Upload error: {}", err);
+
+                        if let Some(lib::UploadError::Client(_)) = err.downcast_ref() {
+                            return web::HttpResponse::BadRequest();
+                        } else {
+                            return web::HttpResponse::InternalServerError();
+                        }
+                    }
+                }
             }
-            UploadRequest::Base64(url) => {
+            UploadRequest::Base64(data) => {
                 return web::HttpResponse::NotImplemented();
             }
         }
