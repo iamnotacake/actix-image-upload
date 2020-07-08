@@ -1,4 +1,4 @@
-use actix_web::{ App, HttpServer, Responder, web, guard };
+use actix_web::{ App, HttpServer, HttpResponse, Responder, web, guard };
 use actix_multipart::Multipart;
 use tokio::stream::StreamExt;
 
@@ -87,6 +87,10 @@ async fn main() -> std::io::Result<()> {
                         } else { false }
                     }))
                     .route("", web::post().to(upload_multipart))
+            )
+            .service(
+                web::scope("/upload")
+                    .route("", web::to(|| HttpResponse::BadRequest()))
             )
     })
     .bind((host.as_ref(), port))?
