@@ -50,7 +50,43 @@ async fn upload_multipart(mut multipart: Multipart, config: web::Data<Config>) -
 
     if !uploaded_files.is_empty() {
         eprintln!(
-            "Uploaded {} file{} in total",
+            "Uploaded {} file{} in total (multipart/form-data)",
+            uploaded_files.len(),
+            if uploaded_files.len() > 1 { "s" } else { "" },
+        );
+
+        return web::HttpResponse::Ok();
+    } else {
+        return web::HttpResponse::BadRequest();
+    }
+}
+
+#[derive(Debug, Deserialize)]
+enum UploadRequest {
+    #[serde(rename = "url")]
+    Url(String),
+    #[serde(rename = "base64")]
+    Base64(String),
+}
+
+async fn upload_json(req: web::Json<Vec<UploadRequest>>) -> impl Responder {
+    let mut uploaded_files: Vec<UploadedFile> = Vec::new();
+    dbg!(&req);
+
+    for upload_request in req.iter() {
+        match upload_request {
+            UploadRequest::Url(url) => {
+                return web::HttpResponse::NotImplemented();
+            }
+            UploadRequest::Base64(url) => {
+                return web::HttpResponse::NotImplemented();
+            }
+        }
+    }
+
+    if !uploaded_files.is_empty() {
+        eprintln!(
+            "Uploaded {} file{} in total (application/json)",
             uploaded_files.len(),
             if uploaded_files.len() > 1 { "s" } else { "" },
         );
@@ -88,6 +124,19 @@ async fn main() -> std::io::Result<()> {
                     }))
                     .route("", web::post().to(upload_multipart))
             )
+            .service(
+                web::scope("/upload")
+                    .guard(guard::Post())
+                    .guard(guard::fn_guard(|req| {
+                        if let Some(content_type) = req.headers().get("content-type") {
+                            if let Ok(s) = content_type.to_str() {
+                                s == "application/json"
+                            } else { false }
+                        } else { false }
+                    }))
+                    .route("", web::post().to(upload_json))
+            )
+            // Handle application/x-www-form-urlencoded ?
             .service(
                 web::scope("/upload")
                     .route("", web::to(|| HttpResponse::BadRequest()))

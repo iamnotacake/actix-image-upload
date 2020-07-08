@@ -36,5 +36,8 @@ features = ["blocking", "fs"]
 [dependencies.rand]
 version = "^0.7.3"
 
+[dependencies.serde]
+version = "^1.0.114"
+
 [dependencies.opencv]
 version = "^0.43.1"
