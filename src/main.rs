@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 use actix_web::{ post, App, HttpServer, Responder, web };
 use actix_multipart::Multipart;
-use tokio::prelude::*;
 use tokio::stream::StreamExt;
 use actix_image_upload as lib;
 
@@ -43,13 +42,14 @@ async fn upload(mut multipart: Multipart, config: web::Data<Config>) -> impl Res
                 );
                 return web::HttpResponse::Ok();
             }
-            Err(lib::UploadError::Client(e)) => {
-                eprintln!("Upload error: {}", e);
-                return web::HttpResponse::BadRequest();
-            }
-            Err(lib::UploadError::Server(e)) => {
-                eprintln!("Upload error: {}", e);
-                return web::HttpResponse::InternalServerError();
+            Err(err) => {
+                eprintln!("Upload error: {}", err);
+
+                if let Some(lib::UploadError::Client(_)) = err.downcast_ref() {
+                    return web::HttpResponse::BadRequest();
+                } else {
+                    return web::HttpResponse::InternalServerError();
+                }
             }
         }
     }

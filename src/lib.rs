@@ -1,11 +1,12 @@
 use std::convert::AsRef;
-use std::fmt;
 use std::path::{Path, PathBuf};
 
 use bytes::Bytes;
 use rand::prelude::*;
 use tokio::prelude::*;
 use tokio::stream::{Stream, StreamExt};
+use failure::Fallible;
+use failure_derive::Fail;
 
 pub mod imagetools;
 
@@ -15,18 +16,12 @@ pub struct UploadedFile {
     pub thumbnail_path: Option<PathBuf>,
 }
 
+#[derive(Debug, Fail)]
 pub enum UploadError {
-    Client(Box<dyn std::error::Error>),
-    Server(Box<dyn std::error::Error>),
-}
-
-impl fmt::Display for UploadError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            UploadError::Client(e) => write!(f, "Client error: {}", e),
-            UploadError::Server(e) => write!(f, "Server error: {}", e),
-        }
-    }
+    #[fail(display = "Client error: {}", 0)]
+    Client(failure::Error),
+    #[fail(display = "Server error: {}", 0)]
+    Server(failure::Error),
 }
 
 pub fn gen_rand_id(len: usize) -> String {
@@ -42,11 +37,11 @@ pub async fn upload_image<S, P, E>(
     stream: S,
     uploads_dir: P,
     extension: &str,
-) -> Result<UploadedFile, UploadError>
+) -> Fallible<UploadedFile>
 where
     S: Stream<Item = Result<Bytes, E>> + std::marker::Unpin,
     P: AsRef<Path>,
-    E: Into<Box<dyn std::error::Error>>,
+    E: Into<failure::Error>,
 {
     let id = gen_rand_id(12);
 
@@ -59,7 +54,7 @@ where
 
     let res = stream_to_file(stream, &tmp_path).await;
     if let Err(err) = res {
-        eprintln!("Upload error: {}", err);
+        // eprintln!("Upload error: {}", err);
         return Err(err);
     }
 
@@ -105,11 +100,11 @@ where
     })
 }
 
-pub async fn stream_to_file<S, P, E>(stream: S, filename: P) -> Result<(), UploadError>
+pub async fn stream_to_file<S, P, E>(stream: S, filename: P) -> Fallible<()>
 where
     S: Stream<Item = Result<Bytes, E>> + std::marker::Unpin,
     P: AsRef<Path>,
-    E: Into<Box<dyn std::error::Error>>,
+    E: Into<failure::Error>,
 {
     let file = tokio::fs::File::create(&filename)
         .await
@@ -123,11 +118,11 @@ where
     res
 }
 
-pub async fn stream_to_writer<S, W, E>(mut stream: S, mut writer: W) -> Result<(), UploadError>
+pub async fn stream_to_writer<S, W, E>(mut stream: S, mut writer: W) -> Fallible<()>
 where
     S: Stream<Item = Result<Bytes, E>> + std::marker::Unpin,
     W: AsyncWrite + std::marker::Unpin,
-    E: Into<Box<dyn std::error::Error>>,
+    E: Into<failure::Error>,
 {
     while let Some(chunk) = stream.next().await {
         let chunk = chunk.map_err(|e| UploadError::Client(e.into()))?;

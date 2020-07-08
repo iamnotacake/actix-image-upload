@@ -20,6 +20,12 @@ default-features = false
 [dependencies.actix-multipart]
 version = "^0.3.0-alpha.1"
 
+[dependencies.failure]
+version = "^0.1.8"
+
+[dependencies.failure_derive]
+version = "^0.1.8"
+
 [dependencies.mime]
 version = "^0.3.16"
 
