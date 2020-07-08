@@ -10,6 +10,13 @@ use failure_derive::Fail;
 
 pub mod imagetools;
 
+#[derive(Clone)]
+pub struct Config {
+    pub host: String,
+    pub port: u16,
+    pub uploads_dir: PathBuf,
+}
+
 pub struct UploadedFile {
     pub id: String,
     pub path: PathBuf,

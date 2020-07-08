@@ -4,12 +4,8 @@ use actix_multipart::Multipart;
 use tokio::stream::StreamExt;
 use actix_image_upload as lib;
 
-#[derive(Clone)]
-struct Config {
-    host: String,
-    port: u16,
-    uploads_dir: PathBuf,
-}
+use actix_image_upload as lib;
+use lib::{ Config, UploadedFile };
 
 #[post("/upload")]
 async fn upload(mut multipart: Multipart, config: web::Data<Config>) -> impl Responder {
