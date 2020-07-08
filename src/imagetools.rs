@@ -4,6 +4,9 @@ use opencv::core::{ Mat, CV_8UC3, Size_, Vector };
 use opencv::imgcodecs::{ imread, imwrite, IMREAD_COLOR };
 use opencv::imgproc::{ resize, INTER_AREA };
 
+/// Creates resized variant of `src` and stores it to `dest`.
+/// Please note that the codec is guesses based of file extension
+/// so both `src` and `dest` should have them
 pub fn create_thumbnail<P>(src: P, dest: P, (w, h): (u16, u16)) -> opencv::Result<()>
 where
     P: AsRef<Path>,

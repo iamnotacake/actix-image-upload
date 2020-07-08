@@ -8,8 +8,12 @@ use tokio::stream::{Stream, StreamExt};
 use failure::Fallible;
 use failure_derive::Fail;
 
+/// Image processing related stuff
 pub mod imagetools;
 
+/// Some basic server configuration
+/// * host:port to listem socket on
+/// * where to put uploaded/downloaded pictures
 #[derive(Clone)]
 pub struct Config {
     pub host: String,
@@ -17,20 +21,30 @@ pub struct Config {
     pub uploads_dir: PathBuf,
 }
 
+/// Info about successfully uploaded/downloaded picture
 pub struct UploadedFile {
+    /// Unique ID
     pub id: String,
+    /// Location of the file
     pub path: PathBuf,
+    /// Location of the thumbnail (if succeed to generate)
     pub thumbnail_path: Option<PathBuf>,
 }
 
+/// Error describing problem writing streamed file to filesystem
 #[derive(Debug, Fail)]
 pub enum UploadError {
+    /// Error while reading stream
+    /// * Stream from client when we handle file upload
+    /// * Stream from server when we download picture from given URI
     #[fail(display = "Client error: {}", 0)]
     Client(failure::Error),
+    /// Error while creating temporary file or writing stream into that file
     #[fail(display = "Server error: {}", 0)]
     Server(failure::Error),
 }
 
+/// Guess file extension based on MIME type or return None if we don't handle that type
 pub fn mime_type_to_extension(mime_type: &str) -> Option<&'static str> {
     match mime_type {
         "image/bmp" => Some("bmp"),
@@ -40,6 +54,7 @@ pub fn mime_type_to_extension(mime_type: &str) -> Option<&'static str> {
     }
 }
 
+/// Generate random alphanumeric string of given length
 pub fn gen_rand_id(len: usize) -> String {
     let mut rng = thread_rng();
 
