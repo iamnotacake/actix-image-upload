@@ -6,7 +6,9 @@ use actix_image_upload as lib;
 use lib::{ Config, UploadedFile };
 
 async fn upload_multipart(mut multipart: Multipart, config: web::Data<Config>) -> impl Responder {
-    if let Ok(Some(field)) = multipart.try_next().await {
+    let mut uploaded_files = Vec::new();
+
+    while let Ok(Some(field)) = multipart.try_next().await {
         let extension = match lib::mime_type_to_extension(field.content_type().essence_str()) {
             Some(extension) => extension,
             None => return web::HttpResponse::UnsupportedMediaType(),
@@ -20,14 +22,19 @@ async fn upload_multipart(mut multipart: Multipart, config: web::Data<Config>) -
 
         let res = lib::upload_image(field, &config.get_ref().uploads_dir, extension).await;
         match res {
-            Ok(UploadedFile { id, path, thumbnail_path }) => {
+            Ok(uploaded_file) => {
                 eprintln!(
                     "Upload succeed, id: {}, path: {}, thumbnail: {}",
-                    id,
-                    path.to_str().unwrap_or("?"),
-                    if let Some(ref path) = thumbnail_path { path.to_str().unwrap_or("?") } else { "Failed to create" },
+                    uploaded_file.id,
+                    uploaded_file.path.to_str().unwrap_or("?"),
+                    if let Some(ref path) = uploaded_file.thumbnail_path {
+                        path.to_str().unwrap_or("?")
+                    } else {
+                        "Failed to create"
+                    },
                 );
-                return web::HttpResponse::Ok();
+
+                uploaded_files.push(uploaded_file);
             }
             Err(err) => {
                 eprintln!("Upload error: {}", err);
@@ -41,7 +48,17 @@ async fn upload_multipart(mut multipart: Multipart, config: web::Data<Config>) -
         }
     }
 
-    web::HttpResponse::BadRequest()
+    if !uploaded_files.is_empty() {
+        eprintln!(
+            "Uploaded {} file{} in total",
+            uploaded_files.len(),
+            if uploaded_files.len() > 1 { "s" } else { "" },
+        );
+
+        return web::HttpResponse::Ok();
+    } else {
+        return web::HttpResponse::BadRequest();
+    }
 }
 
 #[actix_rt::main]
