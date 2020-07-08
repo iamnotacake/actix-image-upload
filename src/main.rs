@@ -14,15 +14,9 @@ struct Config {
 #[post("/upload")]
 async fn upload(mut multipart: Multipart, config: web::Data<Config>) -> impl Responder {
     if let Ok(Some(field)) = multipart.try_next().await {
-        if field.content_type().type_() != mime::IMAGE {
-            return web::HttpResponse::UnsupportedMediaType()
-        }
-
-        let extension = match field.content_type().subtype().as_str() {
-            "bmp" => "bmp",
-            "jpeg" => "jpg",
-            "png" => "png",
-            _ => return web::HttpResponse::UnsupportedMediaType(),
+        let extension = match lib::mime_type_to_extension(field.content_type().essence_str()) {
+            Some(extension) => extension,
+            None => return web::HttpResponse::UnsupportedMediaType(),
         };
 
         let content_disposition = field.content_disposition().unwrap();

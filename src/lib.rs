@@ -24,6 +24,15 @@ pub enum UploadError {
     Server(failure::Error),
 }
 
+pub fn mime_type_to_extension(mime_type: &str) -> Option<&'static str> {
+    match mime_type {
+        "image/bmp" => Some("bmp"),
+        "image/jpeg" => Some("jpg"),
+        "image/png" => Some("png"),
+        _ => None,
+    }
+}
+
 pub fn gen_rand_id(len: usize) -> String {
     let mut rng = thread_rng();
 
