@@ -156,6 +156,7 @@ async fn main() -> std::io::Result<()> {
         host: "127.0.0.1".into(),
         port: 8080,
         uploads_dir: "/tmp/uploads".into(),
+        max_json_payload_size: 1 << 20,
     };
 
     tokio::fs::create_dir_all(&config.uploads_dir).await?;
@@ -166,8 +167,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .data(config.clone())
             .app_data(web::Json::<Vec<UploadRequest>>::configure(|cfg| {
-                // Allow up to 1MiB JSON request
-                cfg.limit(1 << 20)
+                cfg.limit(config.max_json_payload_size)
             }))
             .service(
                 web::scope("/upload")

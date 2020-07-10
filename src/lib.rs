@@ -20,6 +20,7 @@ pub struct Config {
     pub host: String,
     pub port: u16,
     pub uploads_dir: PathBuf,
+    pub max_json_payload_size: usize,
 }
 
 /// Info about successfully uploaded/downloaded picture
