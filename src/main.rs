@@ -1,3 +1,5 @@
+use std::fmt;
+
 use actix_web::{ App, FromRequest, HttpServer, HttpResponse, Responder, web, guard };
 use actix_multipart::Multipart;
 use serde::Deserialize;
@@ -62,12 +64,21 @@ async fn upload_multipart(mut multipart: Multipart, config: web::Data<Config>) -
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 enum UploadRequest {
     #[serde(rename = "url")]
     Url(String),
     #[serde(rename = "base64")]
     Base64(String),
+}
+
+impl fmt::Debug for UploadRequest {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            UploadRequest::Url(url) => write!(f, "Url(\"{}\")", url),
+            UploadRequest::Base64(data) => write!(f, "Base64({} bytes)", data.len()),
+        }
+    }
 }
 
 async fn upload_json(req: web::Json<Vec<UploadRequest>>, config: web::Data<Config>) -> impl Responder {
