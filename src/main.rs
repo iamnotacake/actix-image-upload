@@ -1,4 +1,4 @@
-use actix_web::{ App, HttpServer, HttpResponse, Responder, web, guard };
+use actix_web::{ App, FromRequest, HttpServer, HttpResponse, Responder, web, guard };
 use actix_multipart::Multipart;
 use serde::Deserialize;
 use tokio::stream::StreamExt;
@@ -105,7 +105,18 @@ async fn upload_json(req: web::Json<Vec<UploadRequest>>, config: web::Data<Confi
                 }
             }
             UploadRequest::Base64(data) => {
-                return web::HttpResponse::NotImplemented();
+                match base64::decode(&data) {
+                    Ok(data) => {
+                        // TODO
+                        return web::HttpResponse::NotImplemented();
+                    }
+                    Err(err) => {
+                        eprintln!("Base64 decode error: {}", err);
+
+                        return web::HttpResponse::BadRequest();
+                    }
+                }
+
             }
         }
     }
@@ -138,6 +149,10 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .data(config.clone())
+            .app_data(web::Json::<Vec<UploadRequest>>::configure(|cfg| {
+                // Allow up to 1MiB JSON request
+                cfg.limit(1 << 20)
+            }))
             .service(
                 web::scope("/upload")
                     .guard(guard::Post())

@@ -1775,6 +1775,7 @@ dependencies = [
  "actix-multipart",
  "actix-rt",
  "actix-web",
+ "base64",
  "bytes",
  "failure",
  "failure_derive",
