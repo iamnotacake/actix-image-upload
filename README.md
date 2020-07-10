@@ -27,7 +27,22 @@ Pass JSON with URLs so the server will download them and handle like they were u
 
 <- 200 OK
    or 415 Unsupported Media Type if any downloaded file had unexpected MIME type
-   or 400 Bad Request if invalid JSON was passed or the array of URLs was empty
+   or 400 Bad Request if invalid JSON was passed or the array was empty
 ```
 Example usage:
 * `./example-usage/upload-json-url-with-curl.sh`
+
+
+Pass JSON with Base64-encoded images (the array can actually mix `url`s and `base64`s):
+```
+-> POST /upload
+   content-type: application/json
+   data: [ { "base64": "(base64-encoded content of image)" } ]
+
+<- 200 OK
+   or 415 Unsupported Media Type if any encoded file had unexpected type
+   or 400 Bad Request if invalid JSON was passed or the array was empty
+```
+Example usage:
+* `./example-usage/upload-json-base64-with-curl.sh`
+Currently max request size with JSON body is 1 MiB.
