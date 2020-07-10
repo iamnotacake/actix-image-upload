@@ -131,18 +131,18 @@ where
     tmp_path.push(&id);
     tmp_path.set_extension("tmp");
 
-    eprintln!("Uploading to {}", tmp_path.to_str().unwrap_or("?"));
+    log::debug!("Uploading to {}", tmp_path.to_str().unwrap_or("?"));
 
     let res = stream_to_file(stream, &tmp_path).await;
     if let Err(err) = res {
-        // eprintln!("Upload error: {}", err);
+        // log::error!("Upload error: {}", err);
         return Err(err);
     }
 
     let mut upload_path = tmp_path.clone();
     upload_path.set_extension(extension);
 
-    eprintln!(
+    log::debug!(
         "Renaming {} -> {}",
         tmp_path.to_str().unwrap_or("?"),
         upload_path.to_str().unwrap_or("?")
@@ -152,7 +152,7 @@ where
     let mut thumbnail_path = upload_path.clone();
     thumbnail_path.set_file_name(format!("{}_thumbnail.{}", id, extension));
 
-    eprintln!(
+    log::debug!(
         "Thumbnail {} -> {}",
         upload_path.to_str().unwrap_or("?"),
         thumbnail_path.to_str().unwrap_or("?")
@@ -168,7 +168,7 @@ where
     .unwrap();
 
     let thumbnail_path = if let Err(err) = res {
-        eprintln!("Error creating thumbnail: {}", err);
+        log::warn!("Error creating thumbnail: {}", err);
         None
     } else {
         Some(thumbnail_path)

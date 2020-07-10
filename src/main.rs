@@ -24,7 +24,7 @@ async fn upload_multipart(mut multipart: Multipart, config: web::Data<Config>) -
         let res = lib::upload_image(field, &config.get_ref().uploads_dir, extension).await;
         match res {
             Ok(uploaded_file) => {
-                eprintln!(
+                log::info!(
                     "Upload succeed, id: {}, path: {}, thumbnail: {}",
                     uploaded_file.id,
                     uploaded_file.path.to_str().unwrap_or("?"),
@@ -38,7 +38,7 @@ async fn upload_multipart(mut multipart: Multipart, config: web::Data<Config>) -
                 uploaded_files.push(uploaded_file);
             }
             Err(err) => {
-                eprintln!("Upload error: {}", err);
+                log::error!("Upload error: {}", err);
 
                 if let Some(lib::UploadError::Client(_)) = err.downcast_ref() {
                     return web::HttpResponse::BadRequest();
@@ -50,7 +50,7 @@ async fn upload_multipart(mut multipart: Multipart, config: web::Data<Config>) -
     }
 
     if !uploaded_files.is_empty() {
-        eprintln!(
+        log::info!(
             "Uploaded {} file{} in total (multipart/form-data)",
             uploaded_files.len(),
             if uploaded_files.len() > 1 { "s" } else { "" },
@@ -72,7 +72,10 @@ enum UploadRequest {
 
 async fn upload_json(req: web::Json<Vec<UploadRequest>>, config: web::Data<Config>) -> impl Responder {
     let mut uploaded_files: Vec<UploadedFile> = Vec::new();
-    dbg!(&req);
+
+    for item in req.iter() {
+        log::debug!("{:?}", item)
+    }
 
     for upload_request in req.iter() {
         match upload_request {
@@ -80,7 +83,7 @@ async fn upload_json(req: web::Json<Vec<UploadRequest>>, config: web::Data<Confi
                 let res = lib::fetch_image(&config.get_ref(), &url).await;
                 match res {
                     Ok(uploaded_file) => {
-                        eprintln!(
+                        log::info!(
                             "Upload succeed, id: {}, path: {}, thumbnail: {}",
                             uploaded_file.id,
                             uploaded_file.path.to_str().unwrap_or("?"),
@@ -94,7 +97,7 @@ async fn upload_json(req: web::Json<Vec<UploadRequest>>, config: web::Data<Confi
                         uploaded_files.push(uploaded_file);
                     }
                     Err(err) => {
-                        eprintln!("Upload error: {}", err);
+                        log::error!("Upload error: {}", err);
 
                         if let Some(lib::UploadError::Client(_)) = err.downcast_ref() {
                             return web::HttpResponse::BadRequest();
@@ -111,7 +114,7 @@ async fn upload_json(req: web::Json<Vec<UploadRequest>>, config: web::Data<Confi
                         return web::HttpResponse::NotImplemented();
                     }
                     Err(err) => {
-                        eprintln!("Base64 decode error: {}", err);
+                        log::error!("Base64 decode error: {}", err);
 
                         return web::HttpResponse::BadRequest();
                     }
@@ -122,7 +125,7 @@ async fn upload_json(req: web::Json<Vec<UploadRequest>>, config: web::Data<Confi
     }
 
     if !uploaded_files.is_empty() {
-        eprintln!(
+        log::info!(
             "Uploaded {} file{} in total (application/json)",
             uploaded_files.len(),
             if uploaded_files.len() > 1 { "s" } else { "" },
@@ -136,6 +139,8 @@ async fn upload_json(req: web::Json<Vec<UploadRequest>>, config: web::Data<Confi
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
+    env_logger::init();
+
     let config = Config {
         host: "127.0.0.1".into(),
         port: 8080,

@@ -10,6 +10,12 @@ edition = "2018"
 lto = true
 codegen-units = 1
 
+[dependencies.env_logger]
+version = "^0.7.1"
+
+[dependencies.log]
+version = "^0.4.8"
+
 [dependencies.actix-rt]
 version = "^1.1.1"
 
