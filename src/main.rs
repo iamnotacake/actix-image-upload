@@ -17,12 +17,6 @@ async fn upload_multipart(mut multipart: Multipart, config: web::Data<Config>) -
             None => return web::HttpResponse::UnsupportedMediaType(),
         };
 
-        let content_disposition = field.content_disposition().unwrap();
-
-        if content_disposition.get_name() != Some("image") {
-            return web::HttpResponse::BadRequest();
-        }
-
         let res = lib::upload_image(field, &config.get_ref().uploads_dir, extension).await;
         match res {
             Ok(uploaded_file) => {
@@ -121,8 +115,42 @@ async fn upload_json(req: web::Json<Vec<UploadRequest>>, config: web::Data<Confi
             UploadRequest::Base64(data) => {
                 match base64::decode(&data) {
                     Ok(data) => {
-                        // TODO
-                        return web::HttpResponse::NotImplemented();
+                        let content_type = tree_magic::from_u8(&data);
+                        log::debug!("{}", &content_type);
+
+                        let extension = match lib::mime_type_to_extension(&content_type) {
+                            Some(extension) => extension,
+                            None => return web::HttpResponse::UnsupportedMediaType(),
+                        };
+
+                        let data = bytes::Bytes::from(data);
+                        let stream = tokio::stream::once(Ok::<_, failure::Error>(data));
+                        let res = lib::upload_image(stream, &config.get_ref().uploads_dir, extension).await;
+                        match res {
+                            Ok(uploaded_file) => {
+                                log::info!(
+                                    "Upload succeed, id: {}, path: {}, thumbnail: {}",
+                                    uploaded_file.id,
+                                    uploaded_file.path.to_str().unwrap_or("?"),
+                                    if let Some(ref path) = uploaded_file.thumbnail_path {
+                                        path.to_str().unwrap_or("?")
+                                    } else {
+                                        "Failed to create"
+                                    },
+                                );
+
+                                uploaded_files.push(uploaded_file);
+                            }
+                            Err(err) => {
+                                log::error!("Upload error: {}", err);
+
+                                if let Some(lib::UploadError::Client(_)) = err.downcast_ref() {
+                                    return web::HttpResponse::BadRequest();
+                                } else {
+                                    return web::HttpResponse::InternalServerError();
+                                }
+                            }
+                        }
                     }
                     Err(err) => {
                         log::error!("Base64 decode error: {}", err);

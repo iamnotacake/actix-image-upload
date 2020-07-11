@@ -57,3 +57,6 @@ version = "^1.0.114"
 
 [dependencies.opencv]
 version = "^0.43.1"
+
+[dependencies.tree_magic]
+version = "^0.2.3"
