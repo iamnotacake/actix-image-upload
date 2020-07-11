@@ -3,11 +3,11 @@ use std::path::{Path, PathBuf};
 
 use actix_web::http::header;
 use bytes::Bytes;
+use failure::Fallible;
+use failure_derive::Fail;
 use rand::prelude::*;
 use tokio::prelude::*;
 use tokio::stream::{Stream, StreamExt};
-use failure::Fallible;
-use failure_derive::Fail;
 
 /// Image processing related stuff
 pub mod imagetools;
@@ -80,7 +80,10 @@ pub async fn fetch_image(config: &Config, uri: &str) -> Fallible<UploadedFile> {
     let client = reqwest::Client::new();
 
     let mut headers = reqwest::header::HeaderMap::new();
-    headers.insert(header::ACCEPT, "image/jpeg, image/png, image/bmp".parse().unwrap());
+    headers.insert(
+        header::ACCEPT,
+        "image/jpeg, image/png, image/bmp".parse().unwrap(),
+    );
 
     let response = client
         .get(uri)

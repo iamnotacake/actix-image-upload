@@ -1,12 +1,12 @@
 use std::fmt;
 
-use actix_web::{ App, FromRequest, HttpServer, HttpResponse, Responder, web, guard };
 use actix_multipart::Multipart;
+use actix_web::{guard, web, App, FromRequest, HttpResponse, HttpServer, Responder};
 use serde::Deserialize;
 use tokio::stream::StreamExt;
 
+use lib::{Config, UploadedFile};
 use actix_image_upload as lib;
-use lib::{ Config, UploadedFile };
 
 async fn upload_multipart(mut multipart: Multipart, config: web::Data<Config>) -> impl Responder {
     let mut uploaded_files = Vec::new();
@@ -75,7 +75,10 @@ impl fmt::Debug for UploadRequest {
     }
 }
 
-async fn upload_json(req: web::Json<Vec<UploadRequest>>, config: web::Data<Config>) -> impl Responder {
+async fn upload_json(
+    req: web::Json<Vec<UploadRequest>>,
+    config: web::Data<Config>,
+) -> impl Responder {
     let mut uploaded_files: Vec<UploadedFile> = Vec::new();
 
     for item in req.iter() {
@@ -112,54 +115,52 @@ async fn upload_json(req: web::Json<Vec<UploadRequest>>, config: web::Data<Confi
                     }
                 }
             }
-            UploadRequest::Base64(data) => {
-                match base64::decode(&data) {
-                    Ok(data) => {
-                        let content_type = tree_magic::from_u8(&data);
-                        log::debug!("{}", &content_type);
+            UploadRequest::Base64(data) => match base64::decode(&data) {
+                Ok(data) => {
+                    let content_type = tree_magic::from_u8(&data);
+                    log::debug!("{}", &content_type);
 
-                        let extension = match lib::mime_type_to_extension(&content_type) {
-                            Some(extension) => extension,
-                            None => return web::HttpResponse::UnsupportedMediaType(),
-                        };
+                    let extension = match lib::mime_type_to_extension(&content_type) {
+                        Some(extension) => extension,
+                        None => return web::HttpResponse::UnsupportedMediaType(),
+                    };
 
-                        let data = bytes::Bytes::from(data);
-                        let stream = tokio::stream::once(Ok::<_, failure::Error>(data));
-                        let res = lib::upload_image(stream, &config.get_ref().uploads_dir, extension).await;
-                        match res {
-                            Ok(uploaded_file) => {
-                                log::info!(
-                                    "Upload succeed, id: {}, path: {}, thumbnail: {}",
-                                    uploaded_file.id,
-                                    uploaded_file.path.to_str().unwrap_or("?"),
-                                    if let Some(ref path) = uploaded_file.thumbnail_path {
-                                        path.to_str().unwrap_or("?")
-                                    } else {
-                                        "Failed to create"
-                                    },
-                                );
-
-                                uploaded_files.push(uploaded_file);
-                            }
-                            Err(err) => {
-                                log::error!("Upload error: {}", err);
-
-                                if let Some(lib::UploadError::Client(_)) = err.downcast_ref() {
-                                    return web::HttpResponse::BadRequest();
+                    let data = bytes::Bytes::from(data);
+                    let stream = tokio::stream::once(Ok::<_, failure::Error>(data));
+                    let res =
+                        lib::upload_image(stream, &config.get_ref().uploads_dir, extension).await;
+                    match res {
+                        Ok(uploaded_file) => {
+                            log::info!(
+                                "Upload succeed, id: {}, path: {}, thumbnail: {}",
+                                uploaded_file.id,
+                                uploaded_file.path.to_str().unwrap_or("?"),
+                                if let Some(ref path) = uploaded_file.thumbnail_path {
+                                    path.to_str().unwrap_or("?")
                                 } else {
-                                    return web::HttpResponse::InternalServerError();
-                                }
+                                    "Failed to create"
+                                },
+                            );
+
+                            uploaded_files.push(uploaded_file);
+                        }
+                        Err(err) => {
+                            log::error!("Upload error: {}", err);
+
+                            if let Some(lib::UploadError::Client(_)) = err.downcast_ref() {
+                                return web::HttpResponse::BadRequest();
+                            } else {
+                                return web::HttpResponse::InternalServerError();
                             }
                         }
                     }
-                    Err(err) => {
-                        log::error!("Base64 decode error: {}", err);
-
-                        return web::HttpResponse::BadRequest();
-                    }
                 }
+                Err(err) => {
+                    log::error!("Base64 decode error: {}", err);
 
-            }
+                    return web::HttpResponse::BadRequest();
+                }
+            },
         }
     }
 
@@ -207,7 +208,7 @@ async fn main() -> std::io::Result<()> {
                             } else { false }
                         } else { false }
                     }))
-                    .route("", web::post().to(upload_multipart))
+                    .route("", web::post().to(upload_multipart)),
             )
             .service(
                 web::scope("/upload")
@@ -219,7 +220,7 @@ async fn main() -> std::io::Result<()> {
                             } else { false }
                         } else { false }
                     }))
-                    .route("", web::post().to(upload_json))
+                    .route("", web::post().to(upload_json)),
             )
             // Handle application/x-www-form-urlencoded ?
             .service(
