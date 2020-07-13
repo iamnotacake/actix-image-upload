@@ -46,3 +46,9 @@ Pass JSON with Base64-encoded images (the array can actually mix `url`s and `bas
 Example usage:
 * `./example-usage/upload-json-base64-with-curl.sh`
 Currently max request size with JSON body is 1 MiB.
+
+
+Run with `cargo run --release` or use `docker-compose build && docker-compose up` to build and run in standalone Docker container.
+
+When building on host, OpenCV libraries are required, v4 or v3.2 or v3.4.
+When using v3.X, please fix opencv features in Cargo.toml to use "opencv-32" or "opencv-34" respectively.

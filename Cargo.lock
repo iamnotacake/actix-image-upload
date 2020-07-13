@@ -277,6 +277,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "actix_image_upload"
+version = "0.1.0"
+dependencies = [
+ "actix-multipart",
+ "actix-rt",
+ "actix-web",
+ "base64",
+ "bytes",
+ "env_logger",
+ "failure",
+ "failure_derive",
+ "log",
+ "mime",
+ "opencv",
+ "rand",
+ "reqwest",
+ "serde",
+ "tokio",
+ "tree_magic",
+]
+
+[[package]]
 name = "addr2line"
 version = "0.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1842,28 +1864,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bb6bfa289a4d7c5766392812c0a1f4c1ba45afa1ad47803c11e1f407d846d75f"
 dependencies = [
  "winapi-util",
-]
-
-[[package]]
-name = "actix_image_upload"
-version = "0.1.0"
-dependencies = [
- "actix-multipart",
- "actix-rt",
- "actix-web",
- "base64",
- "bytes",
- "env_logger",
- "failure",
- "failure_derive",
- "log",
- "mime",
- "opencv",
- "rand",
- "reqwest",
- "serde",
- "tokio",
- "tree_magic",
 ]
 
 [[package]]

@@ -57,6 +57,8 @@ version = "^1.0.114"
 
 [dependencies.opencv]
 version = "^0.43.1"
+default-features = false
+features = ["opencv-4", "buildtime-bindgen"]
 
 [dependencies.tree_magic]
 version = "^0.2.3"

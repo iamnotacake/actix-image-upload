@@ -182,7 +182,7 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
 
     let config = Config {
-        host: "127.0.0.1".into(),
+        host: "0.0.0.0".into(),
         port: 8080,
         uploads_dir: "/tmp/uploads".into(),
         max_json_payload_size: 1 << 20,
