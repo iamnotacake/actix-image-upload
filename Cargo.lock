@@ -294,6 +294,7 @@ dependencies = [
  "rand",
  "reqwest",
  "serde",
+ "serde_json",
  "tokio",
  "tree_magic",
 ]

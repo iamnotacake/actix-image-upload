@@ -12,6 +12,8 @@ Upload single/multiple image(s):
 <- 200 OK
    or 415 Unsupported Media Type if uploaded file MIME type was not an image
    or 400 Bad Request if "name" was not "image" in Content-Disposition header
+   content-type: application/json
+   body: ["WgyLB9IKorGE","RoydCP3nVXkI"] # list of images' IDs that were successfully uploaded
 ```
 Example usage:
 * `./example-usage/upload-single-with-curl.sh`
@@ -28,6 +30,8 @@ Pass JSON with URLs so the server will download them and handle like they were u
 <- 200 OK
    or 415 Unsupported Media Type if any downloaded file had unexpected MIME type
    or 400 Bad Request if invalid JSON was passed or the array was empty
+   content-type: application/json
+   body: ["WgyLB9IKorGE","RoydCP3nVXkI"] # list of images' IDs that were successfully uploaded
 ```
 Example usage:
 * `./example-usage/upload-json-url-with-curl.sh`
@@ -42,10 +46,15 @@ Pass JSON with Base64-encoded images (the array can actually mix `url`s and `bas
 <- 200 OK
    or 415 Unsupported Media Type if any encoded file had unexpected type
    or 400 Bad Request if invalid JSON was passed or the array was empty
+   content-type: application/json
+   body: ["WgyLB9IKorGE","RoydCP3nVXkI"] # list of images' IDs that were successfully uploaded
 ```
 Example usage:
 * `./example-usage/upload-json-base64-with-curl.sh`
 Currently max request size with JSON body is 1 MiB.
+
+
+On error, client only gets list of already uploaded images, or empty list if none succeed.
 
 
 Run with `cargo run --release` or use `docker-compose build && docker-compose up` to build and run in standalone Docker container.

@@ -60,5 +60,8 @@ version = "^0.43.1"
 default-features = false
 features = ["opencv-4", "buildtime-bindgen"]
 
+[dependencies.serde_json]
+version = "^1.0.56"
+
 [dependencies.tree_magic]
 version = "^0.2.3"

@@ -1,20 +1,32 @@
 use std::fmt;
 
 use actix_multipart::Multipart;
-use actix_web::{guard, web, App, FromRequest, HttpResponse, HttpServer, Responder};
+use actix_web::{guard, web, App, FromRequest, HttpResponse, HttpServer};
 use serde::Deserialize;
 use tokio::stream::StreamExt;
 
 use lib::{Config, UploadedFile};
 use actix_image_upload as lib;
 
-async fn upload_multipart(mut multipart: Multipart, config: web::Data<Config>) -> impl Responder {
+fn uploaded_files_to_json_list(uploaded_files: Vec<UploadedFile>) -> serde_json::Value {
+    serde_json::Value::Array(
+        uploaded_files
+            .into_iter()
+            .map(|UploadedFile { id, ..}| serde_json::Value::String(id))
+            .collect()
+    )
+}
+
+async fn upload_multipart(mut multipart: Multipart, config: web::Data<Config>) -> HttpResponse {
     let mut uploaded_files = Vec::new();
 
     while let Ok(Some(field)) = multipart.try_next().await {
         let extension = match lib::mime_type_to_extension(field.content_type().essence_str()) {
             Some(extension) => extension,
-            None => return web::HttpResponse::UnsupportedMediaType(),
+            None => {
+                return web::HttpResponse::UnsupportedMediaType()
+                    .json(uploaded_files_to_json_list(uploaded_files));
+            }
         };
 
         let res = lib::upload_image(field, &config.get_ref().uploads_dir, extension).await;
@@ -37,9 +49,11 @@ async fn upload_multipart(mut multipart: Multipart, config: web::Data<Config>) -
                 log::error!("Upload error: {}", err);
 
                 if let Some(lib::UploadError::Client(_)) = err.downcast_ref() {
-                    return web::HttpResponse::BadRequest();
+                    return web::HttpResponse::BadRequest()
+                        .json(uploaded_files_to_json_list(uploaded_files));
                 } else {
-                    return web::HttpResponse::InternalServerError();
+                    return web::HttpResponse::InternalServerError()
+                        .json(uploaded_files_to_json_list(uploaded_files));
                 }
             }
         }
@@ -52,9 +66,11 @@ async fn upload_multipart(mut multipart: Multipart, config: web::Data<Config>) -
             if uploaded_files.len() > 1 { "s" } else { "" },
         );
 
-        return web::HttpResponse::Ok();
+        return web::HttpResponse::Ok()
+            .json(uploaded_files_to_json_list(uploaded_files));
     } else {
-        return web::HttpResponse::BadRequest();
+        return web::HttpResponse::BadRequest()
+            .json(uploaded_files_to_json_list(uploaded_files));
     }
 }
 
@@ -78,7 +94,7 @@ impl fmt::Debug for UploadRequest {
 async fn upload_json(
     req: web::Json<Vec<UploadRequest>>,
     config: web::Data<Config>,
-) -> impl Responder {
+) -> HttpResponse {
     let mut uploaded_files: Vec<UploadedFile> = Vec::new();
 
     for item in req.iter() {
@@ -108,9 +124,11 @@ async fn upload_json(
                         log::error!("Upload error: {}", err);
 
                         if let Some(lib::UploadError::Client(_)) = err.downcast_ref() {
-                            return web::HttpResponse::BadRequest();
+                            return web::HttpResponse::BadRequest()
+                                .json(uploaded_files_to_json_list(uploaded_files));
                         } else {
-                            return web::HttpResponse::InternalServerError();
+                            return web::HttpResponse::InternalServerError()
+                                .json(uploaded_files_to_json_list(uploaded_files));
                         }
                     }
                 }
@@ -122,7 +140,10 @@ async fn upload_json(
 
                     let extension = match lib::mime_type_to_extension(&content_type) {
                         Some(extension) => extension,
-                        None => return web::HttpResponse::UnsupportedMediaType(),
+                        None => {
+                            return web::HttpResponse::UnsupportedMediaType()
+                                .json(uploaded_files_to_json_list(uploaded_files));
+                        }
                     };
 
                     let data = bytes::Bytes::from(data);
@@ -148,9 +169,11 @@ async fn upload_json(
                             log::error!("Upload error: {}", err);
 
                             if let Some(lib::UploadError::Client(_)) = err.downcast_ref() {
-                                return web::HttpResponse::BadRequest();
+                                return web::HttpResponse::BadRequest()
+                                    .json(uploaded_files_to_json_list(uploaded_files));
                             } else {
-                                return web::HttpResponse::InternalServerError();
+                                return web::HttpResponse::InternalServerError()
+                                    .json(uploaded_files_to_json_list(uploaded_files));
                             }
                         }
                     }
@@ -158,7 +181,8 @@ async fn upload_json(
                 Err(err) => {
                     log::error!("Base64 decode error: {}", err);
 
-                    return web::HttpResponse::BadRequest();
+                    return web::HttpResponse::BadRequest()
+                        .json(uploaded_files_to_json_list(uploaded_files));
                 }
             },
         }
@@ -171,9 +195,11 @@ async fn upload_json(
             if uploaded_files.len() > 1 { "s" } else { "" },
         );
 
-        return web::HttpResponse::Ok();
+        return web::HttpResponse::Ok()
+            .json(uploaded_files_to_json_list(uploaded_files));
     } else {
-        return web::HttpResponse::BadRequest();
+        return web::HttpResponse::BadRequest()
+            .json(uploaded_files_to_json_list(uploaded_files));
     }
 }
 
