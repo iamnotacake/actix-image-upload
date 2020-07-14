@@ -58,6 +58,8 @@ On error, client only gets list of already uploaded images, or empty list if non
 
 
 Run with `cargo run --release` or use `docker-compose build && docker-compose up` to build and run in standalone Docker container.
+If your UID and/or GID is not 1000/1000, please change them in `.env` before running `docker-compose up`.
+Otherwise, you may end up with root-owned `/tmp/uploads` and its contents. See your UID/GID by running `id` in shell.
 
 When building on host, OpenCV libraries are required, v4 or v3.2 or v3.4.
 When using v3.X, please fix opencv features in Cargo.toml to use "opencv-32" or "opencv-34" respectively.
